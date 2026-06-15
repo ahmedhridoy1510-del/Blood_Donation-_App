@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>রক্তের বন্ধন - সুপাবেস</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+    body{background:#f5f6fa;padding-bottom:70px}
+    .header{background:#ff4757;color:#fff;padding:12px;text-align:center}
+    .page{display:none;padding:10px}
+    .page.active{display:block}
+    .bottom-nav{position:fixed;bottom:0;width:100%;background:#fff;display:flex;justify-content:space-around;padding:8px 0;border-top:1px solid #ddd}
+    .nav-btn{text-align:center;font-size:12px;cursor:pointer;color:#888;flex:1}
+    .nav-btn.active{color:#ff4757}
+    .nav-btn i{font-size:22px;display:block}
+    .btn{background:#ff4757;color:#fff;border:none;padding:10px;width:100%;border-radius:8px;margin:5px 0;cursor:pointer}
+    .donor-card{background:linear-gradient(135deg,#1b2a4a,#2a4365);color:#fff;padding:12px;border-radius:12px;margin:10px 0;cursor:pointer}
+    .blood-group{background:#ff4757;display:inline-block;padding:2px 8px;border-radius:20px}
+    .premium-card{background:linear-gradient(135deg,#1b2a4a,#2a4365);color:#fff;padding:15px;border-radius:16px;margin:10px}
+    .form-group{margin:10px 0}
+    input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+    .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-content{background:#fff;width:90%;max-width:350px;border-radius:16px;padding:20px}
+    .reg-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f2f5;z-index:2000;overflow:auto;padding:20px}
+    .status-green{background:rgba(46,204,113,0.3);color:#8effc1}
+    .status-red{background:rgba(255,71,87,0.3);color:#ff9faa}
+</style>
+</head>
+<body>
+
+<!-- Registration Screen -->
+<div id="regScreen" class="reg-screen">
+    <h2>রক্তের বন্ধন - নিবন্ধন</h2>
+    <div id="regError" style="color:red;margin:10px 0;display:none"></div>
+    <form id="regForm">
+        <div class="form-group"><input type="text" id="regName" placeholder="নাম" required></div>
+        <div class="form-group"><select id="regBlood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+        <div class="form-group"><input type="number" id="regAge" placeholder="বয়স" required></div>
+        <div class="form-group"><select id="regGender"><option>পুরুষ</option><option>মহিলা</option></select></div>
+        <div class="form-group"><input type="tel" id="regPhone" placeholder="মোবাইল" required></div>
+        <div class="form-group"><input type="text" id="regHeight" placeholder="উচ্চতা" required></div>
+        <div class="form-group"><input type="text" id="regLocation" placeholder="ঠিকানা" required></div>
+        <div class="form-group"><input type="number" id="regCount" placeholder="মোট দান" value="0"></div>
+        <div class="form-group"><input type="date" id="regLastDate"></div>
+        <button type="submit" class="btn">নিবন্ধন করুন</button>
+    </form>
+    <button class="btn" style="background:#3498db" onclick="testSupabase()">সংযোগ পরীক্ষা</button>
+</div>
+
+<div class="header"><i class="fas fa-heartbeat"></i> রক্তের বন্ধন</div>
+
+<div id="homePage" class="page">
+    <div style="background:linear-gradient(135deg,#1b2a4a,#2a4365);color:#fff;padding:20px;border-radius:16px;margin:15px;text-align:center">
+        <h4>কোরআনুল কারীম</h4>
+        <p>"যে একটি মানুষ বাঁচায়, সে যেন সমস্ত মানুষ বাঁচালো"</p>
+    </div>
+    <div style="background:#fff;padding:12px;margin:10px;display:flex;justify-content:space-between;border-radius:12px">
+        <span>মোট ডোনার</span> <span id="totalCount">0</span>
+    </div>
+    <div style="background:#2ecc71;color:#fff;padding:12px;margin:10px;display:flex;justify-content:space-between;border-radius:12px">
+        <span>প্রস্তুত ডোনার</span> <span id="readyCount">0</span>
+    </div>
+    <div class="btn" style="background:#fff;color:#ff4757;border:1px dashed #ff4757" onclick="openAddModal()">+ নতুন ডোনার যোগ করুন</div>
+</div>
+
+<div id="listPage" class="page">
+    <div class="btn" style="background:#2a4365" onclick="openAddModal()">+ নতুন ডোনার</div>
+    <div id="donorList"></div>
+</div>
+
+<div id="profilePage" class="page">
+    <div id="profileCard" class="premium-card">প্রোফাইল দেখাতে নিবন্ধন করুন</div>
+    <div class="btn" onclick="openPin('edit')">এডিট (পিন)</div>
+    <div class="btn" style="background:#ff4757" onclick="openPin('delete')">ডিলিট (পিন)</div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-btn" onclick="showPage('home')"><i class="fas fa-home"></i>হোম</div>
+    <div class="nav-btn" onclick="showPage('list')"><i class="fas fa-list"></i>তালিকা</div>
+    <div class="nav-btn" onclick="showPage('profile')"><i class="fas fa-user"></i>প্রোফাইল</div>
+</div>
+
+<!-- Modals -->
+<div id="addModal" class="modal" onclick="if(event.target===this) closeModal('addModal')">
+    <div class="modal-content"><span style="float:right;cursor:pointer" onclick="closeModal('addModal')">&times;</span>
+        <h3>নতুন ডোনার</h3>
+        <form id="addForm"><div class="form-group"><input type="text" id="addName" placeholder="নাম" required></div>
+        <div class="form-group"><select id="addBlood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+        <div class="form-group"><input type="tel" id="addPhone" placeholder="মোবাইল" required></div>
+        <div class="form-group"><input type="text" id="addLocation" placeholder="ঠিকানা" required></div>
+        <div class="form-group"><input type="number" id="addCount" placeholder="মোট দান" value="0"></div>
+        <div class="form-group"><input type="date" id="addLastDate"></div>
+        <button type="submit" class="btn">যোগ করুন</button></form>
+    </div>
+</div>
+
+<div id="editModal" class="modal" onclick="if(event.target===this) closeModal('editModal')">
+    <div class="modal-content"><span style="float:right;cursor:pointer" onclick="closeModal('editModal')">&times;</span>
+        <h3>তথ্য পরিবর্তন</h3>
+        <form id="editForm"><input type="hidden" id="editId">
+        <div class="form-group"><input type="text" id="editName" placeholder="নাম" required></div>
+        <div class="form-group"><input type="text" id="editBlood" placeholder="রক্তের গ্রুপ" required></div>
+        <div class="form-group"><input type="tel" id="editPhone" placeholder="মোবাইল" required></div>
+        <div class="form-group"><input type="text" id="editLocation" placeholder="ঠিকানা" required></div>
+        <div class="form-group"><input type="number" id="editCount" placeholder="মোট দান" required></div>
+        <div class="form-group"><input type="date" id="editLastDate"></div>
+        <button type="submit" class="btn">আপডেট করুন</button></form>
+    </div>
+</div>
+
+<div id="pinModal" class="modal" onclick="if(event.target===this) closeModal('pinModal')">
+    <div class="modal-content"><h3>পিন দিন</h3><input type="password" id="pinInput" style="width:100%;padding:8px;text-align:center;letter-spacing:5px"><br>
+    <button class="btn" onclick="verifyPin()">নিশ্চিত</button>
+    <button class="btn" style="background:#95a5a6" onclick="closeModal('pinModal')">বাতিল</button></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://vdzdcrlcupxilzmpkk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkemRjcmxjdXB4aWx6bXBra2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MTY1NzEsImV4cCI6MjA5Njk5MjU3MX0.daAH2Dpg3MSSKlGxAIwPnT8vCrZVWykQv_5-jUJB8jc';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const ADMIN_PIN = "1234";
+
+let currentUser = null, allDonors = [], selectedDonor = null, pendingAction = "";
+
+// Navigation
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(pageId+'Page').classList.add('active');
+    if(pageId==='profile' && currentUser) renderProfile();
+    if(pageId==='list') renderDonorList();
+}
+
+// Test
+async function testSupabase() {
+    const { error } = await supabase.from('donors').select('count',{count:'exact',head:true});
+    alert(error ? 'ত্রুটি: '+error.message : 'সফল!');
+}
+
+// Load donors
+async function loadDonors() {
+    const { data,error } = await supabase.from('donors').select('*');
+    if(!error && data) {
+        allDonors = data;
+        document.getElementById('totalCount').innerText = allDonors.length;
+        let ready = allDonors.filter(d=>getStatus(d.lastDate).status==='green').length;
+        document.getElementById('readyCount').innerText = ready;
+        if(document.getElementById('listPage').classList.contains('active')) renderDonorList();
+        if(currentUser) {
+            let updated = allDonors.find(d=>d.id===currentUser.id);
+            if(updated) { currentUser=updated; localStorage.setItem('bloodUser',JSON.stringify(currentUser)); if(document.getElementById('profilePage').classList.contains('active')) renderProfile(); }
+        }
+    }
+}
+
+function getStatus(lastDate) {
+    if(!lastDate) return {status:'green',msg:'প্রস্তুত'};
+    let days = Math.floor((new Date()-new Date(lastDate))/86400000);
+    return days<90 ? {status:'red',msg:`বাকি ${90-days} দিন`} : {status:'green',msg:'প্রস্তুত'};
+}
+
+function renderDonorList() {
+    let container = document.getElementById('donorList');
+    if(!container) return;
+    if(allDonors.length===0) { container.innerHTML='<p>কোনো ডোনার নেই</p>'; return; }
+    container.innerHTML = '';
+    allDonors.forEach(d => {
+        let status = getStatus(d.lastDate);
+        let div = document.createElement('div');
+        div.className = 'donor-card';
+        div.onclick = ()=>showDetails(d);
+        div.innerHTML = `<div><span class="blood-group">${d.group}</span> <span class="status-${status.status}">${status.msg}</span></div><div><strong>${escapeHtml(d.name)}</strong></div><div>${escapeHtml(d.location)}</div><div>দান: ${d.count} বার</div>`;
+        container.appendChild(div);
+    });
+}
+
+function showDetails(d) {
+    selectedDonor = d;
+    let status = getStatus(d.lastDate);
+    alert(`${d.name}\nগ্রুপ: ${d.group}\nমোবাইল: ${d.phone}\nঠিকানা: ${d.location}\nদান: ${d.count} বার\nশেষ দান: ${d.lastDate||'নেই'}\n${status.msg}`);
+    if(confirm('এডিট করবেন?')) openPin('edit-any');
+    else if(confirm('ডিলিট করবেন?')) openPin('delete-any');
+}
+
+// Registration
+document.getElementById('regForm').addEventListener('submit', async(e)=>{
+    e.preventDefault();
+    let errorDiv = document.getElementById('regError');
+    errorDiv.style.display='none';
+    let id = 'BDN-'+Date.now();
+    let newUser = {
+        id, memberId:id,
+        name: document.getElementById('regName').value,
+        group: document.getElementById('regBlood').value,
+        age: parseInt(document.getElementById('regAge').value),
+        gender: document.getElementById('regGender').value,
+        phone: document.getElementById('regPhone').value,
+        height: document.getElementById('regHeight').value,
+        location: document.getElementById('regLocation').value,
+        count: parseInt(document.getElementById('regCount').value),
+        lastDate: document.getElementById('regLastDate').value || null
+    };
+    let { error } = await supabase.from('donors').insert([newUser]);
+    if(error) { errorDiv.style.display='block'; errorDiv.innerText='ব্যর্থ: '+error.message; return; }
+    currentUser = newUser;
+    localStorage.setItem('bloodUser',JSON.stringify(currentUser));
+    document.getElementById('regScreen').style.display='none';
+    await loadDonors();
+    showPage('profile');
+});
+
+// Public add
+document.getElementById('addForm').addEventListener('submit', async(e)=>{
+    e.preventDefault();
+    let id = 'BDN-'+Date.now();
+    let newDonor = {
+        id, memberId:id,
+        name: document.getElementById('addName').value,
+        group: document.getElementById('addBlood').value,
+        phone: document.getElementById('addPhone').value,
+        location: document.getElementById('addLocation').value,
+        count: parseInt(document.getElementById('addCount').value),
+        lastDate: document.getElementById('addLastDate').value || null,
+        age:0, gender:'', height:''
+    };
+    let { error } = await supabase.from('donors').insert([newDonor]);
+    if(error) { alert(error.message); return; }
+    closeModal('addModal');
+    document.getElementById('addForm').reset();
+    await loadDonors();
+    alert('যুক্ত হয়েছে');
+});
+
+// Edit & Delete
+document.getElementById('editForm').addEventListener('submit', async(e)=>{
+    e.preventDefault();
+    let id = document.getElementById('editId').value;
+    let updates = {
+        name: document.getElementById('editName').value,
+        group: document.getElementById('editBlood').value,
+        phone: document.getElementById('editPhone').value,
+        location: document.getElementById('editLocation').value,
+        count: parseInt(document.getElementById('editCount').value),
+        lastDate: document.getElementById('editLastDate').value || null
+    };
+    let { error } = await supabase.from('donors').update(updates).eq('id',id);
+    if(error) { alert(error.message); return; }
+    if(currentUser && currentUser.id===id) { currentUser={...currentUser,...updates}; localStorage.setItem('bloodUser',JSON.stringify(currentUser)); renderProfile(); }
+    await loadDonors();
+    closeModal('editModal');
+    alert('আপডেট হয়েছে');
+});
+
+async function deleteDonor(id) {
+    let { error } = await supabase.from('donors').delete().eq('id',id);
+    if(error) { alert(error.message); return false; }
+    if(currentUser && currentUser.id===id) { localStorage.removeItem('bloodUser'); currentUser=null; document.getElementById('regScreen').style.display='block'; showPage('home'); }
+    await loadDonors();
+    return true;
+}
+
+function fillEditForm(donor) {
+    document.getElementById('editId').value = donor.id;
+    document.getElementById('editName').value = donor.name;
+    document.getElementById('editBlood').value = donor.group;
+    document.getElementById('editPhone').value = donor.phone;
+    document.getElementById('editLocation').value = donor.location;
+    document.getElementById('editCount').value = donor.count;
+    document.getElementById('editLastDate').value = donor.lastDate || '';
+    openModal('editModal');
+}
+
+// PIN
+function openPin(action) {
+    pendingAction = action;
+    document.getElementById('pinInput').value = '';
+    openModal('pinModal');
+}
+window.verifyPin = function() {
+    let pin = document.getElementById('pinInput').value;
+    if(pin !== ADMIN_PIN) { alert('ভুল পিন'); closeModal('pinModal'); return; }
+    closeModal('pinModal');
+    if(pendingAction === 'edit') fillEditForm(currentUser);
+    else if(pendingAction === 'edit-any') fillEditForm(selectedDonor);
+    else if(pendingAction === 'delete') { if(confirm('প্রোফাইল ডিলিট?')) deleteDonor(currentUser.id); }
+    else if(pendingAction === 'delete-any') { if(selectedDonor && confirm(selectedDonor.name+' ডিলিট?')) deleteDonor(selectedDonor.id); }
+};
+
+function renderProfile() {
+    if(!currentUser) return;
+    let status = getStatus(currentUser.lastDate);
+    document.getElementById('profileCard').innerHTML = `
+        <div style="display:flex;justify-content:space-between"><h3>প্রিমিয়াম ডোনার</h3><span class="blood-group">${currentUser.group}</span></div>
+        <div><strong>${escapeHtml(currentUser.name)}</strong></div>
+        <p><i class="fas fa-phone-alt"></i> ${escapeHtml(currentUser.phone)}</p>
+        <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(currentUser.location)}</p>
+        <p><i class="fas fa-tint"></i> মোট দান: ${currentUser.count} বার</p>
+        <p><i class="fas fa-calendar"></i> শেষ দান: ${currentUser.lastDate || '-'}</p>
+        <p><i class="fas fa-birthday-cake"></i> বয়স: ${currentUser.age} বছর</p>
+        <p><i class="fas fa-arrows-alt-v"></i> উচ্চতা: ${currentUser.height}</p>
+        <p>ID: ${currentUser.id}</p>
+        <div class="status-${status.status}">${status.msg}</div>
+    `;
+}
+
+function openModal(id) { document.getElementById(id).style.display='flex'; }
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+function openAddModal() { document.getElementById('addForm').reset(); openModal('addModal'); }
+function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+
+// Realtime
+supabase.channel('donors').on('postgres_changes',{event:'*',schema:'public',table:'donors'},()=>loadDonors()).subscribe();
+
+// Init
+async function init() {
+    let saved = localStorage.getItem('bloodUser');
+    if(saved) {
+        currentUser = JSON.parse(saved);
+        let { data } = await supabase.from('donors').select('*').eq('id',currentUser.id).single();
+        if(data) currentUser = data;
+        else currentUser = null;
+    }
+    if(!currentUser) document.getElementById('regScreen').style.display='block';
+    else document.getElementById('regScreen').style.display='none';
+    await loadDonors();
+    showPage('home');
+}
+init();
+</script>
+</body>
+</html>
